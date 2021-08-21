@@ -281,6 +281,7 @@ def post_auth():
         cnx.close()
 
     session["jia_user_id"] = jia_user_id
+    user_id_cache.add(jia_user_id)
 
     return ""
 
