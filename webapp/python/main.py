@@ -20,6 +20,7 @@ from werkzeug.exceptions import (
 import mysql.connector
 from sqlalchemy.pool import QueuePool
 import jwt
+import cProfile
 
 
 TZ = ZoneInfo("Asia/Tokyo")
@@ -845,4 +846,4 @@ def is_valid_condition_format(condition_str: str) -> bool:
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=getenv("SERVER_APP_PORT", 3000), threaded=True)
+    cProfile.run('app.run(host="0.0.0.0", port=getenv("SERVER_APP_PORT", 3000), threaded=True)', filename='/home/isucon/app.prof')
