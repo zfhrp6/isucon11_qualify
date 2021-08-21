@@ -194,6 +194,16 @@ def select_row(*args, **kwargs):
     return rows[0] if len(rows) > 0 else None
 
 
+def select_one(query, *args, **kwargs):
+    cnx = cnxpool.connect()
+    try:
+        cur = cnx.cursor(dictionary=True)
+        cur.execute(query, *args)
+        return cur.fetchone()
+    finally:
+        cnx.close()
+
+
 with open(JIA_JWT_SIGNING_KEY_PATH, "rb") as f:
     jwt_public_key = f.read()
 
@@ -411,7 +421,7 @@ def get_isu_id(jia_isu_uuid):
     jia_user_id = get_user_id_from_session()
 
     query = "SELECT * FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    res = select_row(query, (jia_user_id, jia_isu_uuid))
+    res = select_one(query, (jia_user_id, jia_isu_uuid))
     if res is None:
         raise NotFound("not found: isu")
 
