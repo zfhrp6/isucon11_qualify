@@ -18,6 +18,8 @@ cur.execute('SELECT `jia_user_id`, `jia_isu_uuid`, `name`, `image` from `isu`')
 a = cur.fetchall()
 
 SAVE_PATH = '/home/isucon/isu_images'
+if not os.path.exists(SAVE_PATH):
+    os.mkdir(SAVE_PATH)
 
 for im in a:
     print(im.keys())
