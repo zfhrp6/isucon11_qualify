@@ -774,26 +774,26 @@ def post_isu_condition(jia_isu_uuid):
         if count == 0:
             raise NotFound("not found: isu")
 
+        app.logger.warning(f'COUNT: {len(req)}')
+
+        query_base = """
+            INSERT
+            INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)
+            VALUES 
+            """
+        query_rows = []
+
         for cond in req:
             if not is_valid_condition_format(cond.condition):
                 raise BadRequest("bad request body")
 
-            query = """
-                INSERT
-                INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`)
-                VALUES (%s, %s, %s, %s, %s)
-                """
-            cur.execute(
-                query,
-                (
-                    jia_isu_uuid,
-                    datetime.fromtimestamp(cond.timestamp, tz=TZ),
-                    cond.is_sitting,
-                    cond.condition,
-                    cond.message,
-                ),
-            )
-
+            dt = datetime.fromtimestamp(cond.timestamp, tz=TZ)
+            # truncate tz (`2021-06-03 15:59:59+09:00` -> `2021-06-03 15:59:59`
+            dt = f'{dt}'[:-6]
+            query_row = f"('{jia_isu_uuid}', '{dt}', {cond.is_sitting}, '{cond.condition}', '{cond.message}')"
+            query_rows.append(query_row)
+        query = query_base + ',\n'.join(query_rows)
+        cur.execute(query)
         cnx.commit()
     except:
         cnx.rollback()
