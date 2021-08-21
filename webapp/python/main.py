@@ -221,7 +221,7 @@ def get_user_id_from_session():
         raise Unauthorized("you are not signed in")
 
     query = "SELECT COUNT(*) FROM `user` WHERE `jia_user_id` = %s"
-    (count,) = select_row(query, (jia_user_id,), dictionary=False)
+    (count,) = select_one(query, (jia_user_id,), dictionary=False)
 
     if count == 0:
         raise Unauthorized("you are not signed in")
@@ -231,7 +231,7 @@ def get_user_id_from_session():
 
 def get_jia_service_url() -> str:
     query = "SELECT * FROM `isu_association_config` WHERE `name` = %s"
-    config = select_row(query, ("jia_service_url",))
+    config = select_one(query, ("jia_service_url",))
     return config["url"] if config is not None else DEFAULT_JIA_SERVICE_URL
 
 
@@ -470,7 +470,7 @@ def get_isu_graph(jia_isu_uuid):
     dt = truncate_datetime(dt, timedelta(hours=1))
 
     query = "SELECT COUNT(*) FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    (count,) = select_row(query, (jia_user_id, jia_isu_uuid), dictionary=False)
+    (count,) = select_one(query, (jia_user_id, jia_isu_uuid), dictionary=False)
     if count == 0:
         raise NotFound("not found: isu")
 
@@ -633,7 +633,7 @@ def get_isu_confitions(jia_isu_uuid):
             raise BadRequest("bad format: start_time")
 
     query = "SELECT name FROM `isu` WHERE `jia_isu_uuid` = %s AND `jia_user_id` = %s"
-    row = select_row(query, (jia_isu_uuid, jia_user_id))
+    row = select_one(query, (jia_isu_uuid, jia_user_id))
     if row is None:
         raise NotFound("not found: isu")
     isu_name = row["name"]
