@@ -307,23 +307,53 @@ def get_isu_list():
     """ISUの一覧を取得"""
     jia_user_id = get_user_id_from_session()
 
-    query = "SELECT * FROM `isu` WHERE `jia_user_id` = %s ORDER BY `id` DESC"
-    isu_list = [Isu(**row) for row in select_all(query, (jia_user_id,))]
+    query = '''
+    SELECT i.*, c.* FROM `isu` AS i
+    LEFT JOIN (SELECT c1.*
+FROM isu_condition AS c1
+LEFT JOIN isu_condition AS c2 ON (c1.jia_isu_uuid = c2.jia_isu_uuid AND c1.timestamp < c2.timestamp)
+WHERE c2.timestamp IS NULL
+    ) AS c
+    USING(`jia_isu_uuid`)
+    WHERE `i`.`jia_user_id` = %s
+    GROUP BY `i`.`jia_isu_uuid`
+    ORDER BY `i`.`id` DESC
+    '''
+    result = select_all(query, (jia_user_id,))
+    app.logger.warning(f'QQQ: {result}')
+    # isu_list = [Isu(id=row['id'],
+    #                 jia_isu_uuid=row['jia_isu_uuid'],
+    #                 name=row['name'],
+    #                 image=row['image'],
+    #                 character=row['character'],
+    #                 jia_user_id=row['jia_user_id'],
+    #                 created_at=row['created_at'],
+    #                 updated_at=row['updated_at']) for row in result]
 
     response_list = []
-    for isu in isu_list:
+    for row in result:
         found_last_condition = True
-        query = "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = %s ORDER BY `timestamp` DESC LIMIT 1"
-        row = select_row(query, (isu.jia_isu_uuid,))
-        if row is None:
+        # query = "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = %s ORDER BY `timestamp` DESC LIMIT 1"
+        # condition = select_one(query, (row.get('jia_isu_uuid'),))
+        is_condition = row.get('timestamp', None)
+        if is_condition is None:
             found_last_condition = False
-        last_condition = IsuCondition(**row) if found_last_condition else None
+
+        last_condition = IsuCondition(
+            id=row['id'],
+            jia_isu_uuid=row['jia_isu_uuid'],
+            timestamp=row['timestamp'],
+            is_sitting=row['is_sitting'],
+            condition=row['condition'],
+            message=row['message'],
+            created_at=row['created_at'],
+        ) if found_last_condition else None
 
         formatted_condition = None
         if found_last_condition:
             formatted_condition = GetIsuConditionResponse(
                 jia_isu_uuid=last_condition.jia_isu_uuid,
-                isu_name=isu.name,
+                isu_name=row.get('name'),
                 timestamp=int(last_condition.timestamp.timestamp()),
                 is_sitting=last_condition.is_sitting,
                 condition=last_condition.condition,
@@ -333,10 +363,10 @@ def get_isu_list():
 
         response_list.append(
             GetIsuListResponse(
-                id=isu.id,
-                jia_isu_uuid=isu.jia_isu_uuid,
-                name=isu.name,
-                character=isu.character,
+                id=row.get('id'),
+                jia_isu_uuid=row.get('jia_isu_uuid'),
+                name=row.get('name'),
+                character=row.get('character'),
                 latest_isu_condition=formatted_condition,
             )
         )
