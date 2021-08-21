@@ -805,7 +805,7 @@ def post_isu_condition(jia_isu_uuid):
 
 
 def get_index(**kwargs):
-    return send_file(f"{FRONTEND_CONTENTS_PATH}/index.html")
+    return send_file(f"{FRONTEND_CONTENTS_PATH}/index.html", max_age=30000)
 
 
 app.add_url_rule("/", view_func=get_index)
