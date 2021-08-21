@@ -1,4 +1,5 @@
 from os import getenv
+import os
 from subprocess import call
 from dataclasses import dataclass
 import json
@@ -362,6 +363,11 @@ def post_isu():
             image = f.read()
     else:
         image = image.read()
+        if not os.path.exists(f'/home/isucon/webapp/isu_images/{jia_user_id}'):
+            os.mkdir(f'/home/isucon/webapp/isu_images/{jia_user_id}')
+
+        with open(f'/home/isucon/webapp/isu_images/{jia_user_id}/{jia_isu_uuid}.jpg', 'wb') as img:
+            img.write(image)
 
     cnx = cnxpool.connect()
     try:
@@ -434,8 +440,12 @@ def get_isu_icon(jia_isu_uuid):
     """ISUのアイコンを取得"""
     jia_user_id = get_user_id_from_session()
 
+    img_path = f'/home/isucon/webapp/isu_images/{jia_user_id}/{jia_isu_uuid}.jpg'
+    if os.path.exists(img_path):
+        return send_file(img_path)
+
     query = "SELECT `image` FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    res = select_row(query, (jia_user_id, jia_isu_uuid))
+    res = select_one(query, (jia_user_id, jia_isu_uuid))
     if res is None:
         raise NotFound("not found: isu")
 
