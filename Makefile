@@ -6,4 +6,4 @@ restart:
 clear-log:
 	sudo truncate --size 0 /var/log/nginx/access.log
 alp-log:
-	sudo cat /var/log/nginx/access.log | alp ltsv
+	sudo cat /var/log/nginx/access.log | alp --reverse ltsv
