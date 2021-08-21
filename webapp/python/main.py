@@ -219,8 +219,8 @@ def get_user_id_from_session():
     if jia_user_id is None:
         raise Unauthorized("you are not signed in")
 
-    query = "SELECT COUNT(*) FROM `user` WHERE `jia_user_id` = %s"
-    (count,) = select_row(query, (jia_user_id,), dictionary=False)
+    query = "SELECT COUNT(*) FROM `user` WHERE `jia_user_id` = %s LIMIT 1"
+    (count,) = select_one(query, (jia_user_id,), dictionary=False)
 
     if count == 0:
         raise Unauthorized("you are not signed in")
@@ -230,7 +230,7 @@ def get_user_id_from_session():
 
 def get_jia_service_url() -> str:
     query = "SELECT * FROM `isu_association_config` WHERE `name` = %s"
-    config = select_row(query, ("jia_service_url",))
+    config = select_one(query, ("jia_service_url",))
     return config["url"] if config is not None else DEFAULT_JIA_SERVICE_URL
 
 
@@ -313,7 +313,7 @@ def get_isu_list():
     for isu in isu_list:
         found_last_condition = True
         query = "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = %s ORDER BY `timestamp` DESC LIMIT 1"
-        row = select_row(query, (isu.jia_isu_uuid,))
+        row = select_one(query, (isu.jia_isu_uuid,))
         if row is None:
             found_last_condition = False
         last_condition = IsuCondition(**row) if found_last_condition else None
@@ -435,7 +435,7 @@ def get_isu_icon(jia_isu_uuid):
     jia_user_id = get_user_id_from_session()
 
     query = "SELECT `image` FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    res = select_row(query, (jia_user_id, jia_isu_uuid))
+    res = select_one(query, (jia_user_id, jia_isu_uuid))
     if res is None:
         raise NotFound("not found: isu")
 
@@ -457,7 +457,7 @@ def get_isu_graph(jia_isu_uuid):
     dt = truncate_datetime(dt, timedelta(hours=1))
 
     query = "SELECT COUNT(*) FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    (count,) = select_row(query, (jia_user_id, jia_isu_uuid), dictionary=False)
+    (count,) = select_one(query, (jia_user_id, jia_isu_uuid), dictionary=False)
     if count == 0:
         raise NotFound("not found: isu")
 
@@ -620,7 +620,7 @@ def get_isu_confitions(jia_isu_uuid):
             raise BadRequest("bad format: start_time")
 
     query = "SELECT name FROM `isu` WHERE `jia_isu_uuid` = %s AND `jia_user_id` = %s"
-    row = select_row(query, (jia_isu_uuid, jia_user_id))
+    row = select_one(query, (jia_isu_uuid, jia_user_id))
     if row is None:
         raise NotFound("not found: isu")
     isu_name = row["name"]
@@ -741,7 +741,7 @@ def get_trend():
 def post_isu_condition(jia_isu_uuid):
     """ISUからのコンディションを受け取る"""
     # TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
-    drop_probability = 0.3
+    drop_probability = 0.9
     if random() <= drop_probability:
         app.logger.warning("drop post isu condition request")
         return "", 202
@@ -755,7 +755,7 @@ def post_isu_condition(jia_isu_uuid):
         cnx.start_transaction()
         cur = cnx.cursor(dictionary=True)
 
-        query = "SELECT COUNT(*) AS cnt FROM `isu` WHERE `jia_isu_uuid` = %s"
+        query = "SELECT COUNT(*) AS cnt FROM `isu` WHERE `jia_isu_uuid` = %s LIMIT 1"
         cur.execute(query, (jia_isu_uuid,))
         count = cur.fetchone()["cnt"]
         if count == 0:
