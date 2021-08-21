@@ -35,6 +35,7 @@ MYSQL_ERR_NUM_DUPLICATE_ENTRY = 1062
 
 user_cache = {}
 user_id_cache = set({})
+isu_cache = {}
 
 
 class CONDITION_LEVEL(str, Enum):
@@ -308,6 +309,8 @@ def get_isu_list():
 
     query = "SELECT * FROM `isu` WHERE `jia_user_id` = %s ORDER BY `id` DESC"
     isu_list = [Isu(**row) for row in select_all(query, (jia_user_id,))]
+    for i in isu_list:
+        isu_cache[i.jia_isu_uuid] = i
 
     response_list = []
     for isu in isu_list:
@@ -382,6 +385,11 @@ def post_isu():
                 """
 #            cur.execute(query, (jia_isu_uuid, isu_name, image, jia_user_id))
             cur.execute(query, (jia_isu_uuid, isu_name, jia_user_id))
+            try:
+                isu_cache[jia_isu_uuid]['name'] = isu_name
+                isu_cache[jia_isu_uuid]['jia_user_id'] = jia_user_id
+            except:
+                app.logger.error('isu_cache CACHE failed')
         except mysql.connector.errors.IntegrityError as e:
             if e.errno == MYSQL_ERR_NUM_DUPLICATE_ENTRY:
                 abort(409, "duplicated: isu")
@@ -408,10 +416,18 @@ def post_isu():
 
         query = "UPDATE `isu` SET `character` = %s WHERE  `jia_isu_uuid` = %s"
         cur.execute(query, (isu_from_jia["character"], jia_isu_uuid))
+        try:
+            isu_cache[jia_isu_uuid]['character'] = isu_from_jia['character']
+            pass
+        except:
+            pass
 
         query = "SELECT * FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
         cur.execute(query, (jia_user_id, jia_isu_uuid))
-        isu = Isu(**cur.fetchone())
+        if jia_isu_uuid in isu_cache:
+            isu = isu_cache.get(jia_isu_uuid)
+        else:
+            isu = Isu(**cur.fetchone())
 
         cnx.commit()
     except:
