@@ -10,7 +10,7 @@ mysql_connection_env = {
     'time_zone': '+09:00',
 }
 
-cnxpool = QueuePool(lambda: mysql.connector.connect(**mysql_connector_env), pool_size=10)
+cnxpool = QueuePool(lambda: mysql.connector.connect(**mysql_connection_env), pool_size=10)
 cnx = cnxpool.connect()
 cur = cnx.cursor(dictionary=True)
 
