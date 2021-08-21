@@ -229,7 +229,7 @@ def post_initialize():
     if "jia_service_url" not in request.json:
         raise BadRequest("bad request body")
 
-    call("../sql/init.sh")
+    call("/home/isucon/webapp/sql/init.sh")
 
     cnx = cnxpool.connect()
     try:
