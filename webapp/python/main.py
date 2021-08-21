@@ -33,6 +33,10 @@ DEFAULT_JIA_SERVICE_URL = "http://localhost:5000"
 MYSQL_ERR_NUM_DUPLICATE_ENTRY = 1062
 
 
+user_cache = {}
+user_id_cache = set({})
+
+
 class CONDITION_LEVEL(str, Enum):
     INFO = "info"
     WARNING = "warning"
@@ -210,12 +214,16 @@ def get_user_id_from_session():
     if jia_user_id is None:
         raise Unauthorized("you are not signed in")
 
+    if jia_user_id in user_id_cache:
+        return jia_user_id
+
     query = "SELECT COUNT(*) FROM `user` WHERE `jia_user_id` = %s LIMIT 1"
     (count,) = select_row(query, (jia_user_id,), dictionary=False)
 
     if count == 0:
         raise Unauthorized("you are not signed in")
 
+    user_id_cache.add(jia_user_id)
     return jia_user_id
 
 
@@ -273,6 +281,7 @@ def post_auth():
         cnx.close()
 
     session["jia_user_id"] = jia_user_id
+    user_id_cache.add(jia_user_id)
 
     return ""
 
