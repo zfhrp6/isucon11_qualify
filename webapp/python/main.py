@@ -363,11 +363,12 @@ def post_isu():
             image = f.read()
     else:
         image = image.read()
-        if not os.path.exists(f'/home/isucon/webapp/isu_images/{jia_user_id}'):
-            os.mkdir(f'/home/isucon/webapp/isu_images/{jia_user_id}')
 
-        with open(f'/home/isucon/webapp/isu_images/{jia_user_id}/{jia_isu_uuid}.jpg', 'wb') as img:
-            img.write(image)
+    if not os.path.exists(f'/home/isucon/webapp/isu_images/{jia_user_id}'):
+        os.mkdir(f'/home/isucon/webapp/isu_images/{jia_user_id}')
+    with open(f'/home/isucon/webapp/isu_images/{jia_user_id}/{jia_isu_uuid}.jpg', 'wb') as img:
+        img.write(image)
+        app.logger.warning(f"write image into fs: {jia_user_id}{jia_isu_uuid}.jpg")
 
     cnx = cnxpool.connect()
     try:
@@ -378,9 +379,10 @@ def post_isu():
             query = """
                 INSERT
                 INTO `isu` (`jia_isu_uuid`, `name`, `image`, `jia_user_id`)
-                VALUES (%s, %s, %s, %s)
+                VALUES (%s, %s, NULL, %s)
                 """
-            cur.execute(query, (jia_isu_uuid, isu_name, image, jia_user_id))
+#            cur.execute(query, (jia_isu_uuid, isu_name, image, jia_user_id))
+            cur.execute(query, (jia_isu_uuid, isu_name, jia_user_id))
         except mysql.connector.errors.IntegrityError as e:
             if e.errno == MYSQL_ERR_NUM_DUPLICATE_ENTRY:
                 abort(409, "duplicated: isu")
@@ -449,6 +451,7 @@ def get_isu_icon(jia_isu_uuid):
     if res is None:
         raise NotFound("not found: isu")
 
+    app.logger.warning("return image from DB")
     return make_response(res["image"], 200, {"Content-Type": "image/jpeg"})
 
 
@@ -751,7 +754,7 @@ def get_trend():
 def post_isu_condition(jia_isu_uuid):
     """ISUからのコンディションを受け取る"""
     # TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
-    drop_probability = 0.9
+    drop_probability = 0.6
     if random() <= drop_probability:
         app.logger.warning("drop post isu condition request")
         return "", 202
