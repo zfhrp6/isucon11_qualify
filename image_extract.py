@@ -11,6 +11,7 @@ mysql_connection_env = {
 }
 
 cnxpool = QueuePool(lambda: mysql.connector.connect(**mysql_connector_env), pool_size=10)
+cnx = cnxpool.connect()
 cur = cnx.cursor(dictionary=True)
 
 cur.execute('SELECT `jia_user_id`, `jia_isu_uuid`, `name`, `image` from `isu`')
