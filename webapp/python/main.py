@@ -740,7 +740,7 @@ def get_trend():
 def post_isu_condition(jia_isu_uuid):
     """ISUからのコンディションを受け取る"""
     # TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
-    drop_probability = 0.9
+    drop_probability = 0.3
     if random() <= drop_probability:
         app.logger.warning("drop post isu condition request")
         return "", 202
