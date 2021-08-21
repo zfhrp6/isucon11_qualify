@@ -196,16 +196,6 @@ def select_row(*args, **kwargs):
     return rows[0] if len(rows) > 0 else None
 
 
-def select_one(query, *args, **kwargs):
-    cnx = cnxpool.connect()
-    try:
-        cur = cnx.cursor(dictionary=True)
-        cur.execute(query, *args)
-        return cur.fetchone()
-    finally:
-        cnx.close()
-
-
 with open(JIA_JWT_SIGNING_KEY_PATH, "rb") as f:
     jwt_public_key = f.read()
 
@@ -220,8 +210,8 @@ def get_user_id_from_session():
     if jia_user_id is None:
         raise Unauthorized("you are not signed in")
 
-    query = "SELECT COUNT(*) FROM `user` WHERE `jia_user_id` = %s"
-    (count,) = select_one(query, (jia_user_id,), dictionary=False)
+    query = "SELECT COUNT(*) FROM `user` WHERE `jia_user_id` = %s LIMIT 1"
+    (count,) = select_row(query, (jia_user_id,), dictionary=False)
 
     if count == 0:
         raise Unauthorized("you are not signed in")
@@ -230,8 +220,8 @@ def get_user_id_from_session():
 
 
 def get_jia_service_url() -> str:
-    query = "SELECT * FROM `isu_association_config` WHERE `name` = %s"
-    config = select_one(query, ("jia_service_url",))
+    query = "SELECT * FROM `isu_association_config` WHERE `name` = %s LIMIT 1"
+    config = select_row(query, ("jia_service_url",))
     return config["url"] if config is not None else DEFAULT_JIA_SERVICE_URL
 
 
@@ -429,8 +419,8 @@ def get_isu_id(jia_isu_uuid):
     """ISUの情報を取得"""
     jia_user_id = get_user_id_from_session()
 
-    query = "SELECT * FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    res = select_one(query, (jia_user_id, jia_isu_uuid))
+    query = "SELECT * FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s LIMIT 1"
+    res = select_row(query, (jia_user_id, jia_isu_uuid))
     if res is None:
         raise NotFound("not found: isu")
 
@@ -446,8 +436,8 @@ def get_isu_icon(jia_isu_uuid):
     if os.path.exists(img_path):
         return send_file(img_path)
 
-    query = "SELECT `image` FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    res = select_one(query, (jia_user_id, jia_isu_uuid))
+    query = "SELECT `image` FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s LIMIT 1"
+    res = select_row(query, (jia_user_id, jia_isu_uuid))
     if res is None:
         raise NotFound("not found: isu")
 
@@ -469,8 +459,8 @@ def get_isu_graph(jia_isu_uuid):
         raise BadRequest("bad format: datetime")
     dt = truncate_datetime(dt, timedelta(hours=1))
 
-    query = "SELECT COUNT(*) FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s"
-    (count,) = select_one(query, (jia_user_id, jia_isu_uuid), dictionary=False)
+    query = "SELECT COUNT(*) FROM `isu` WHERE `jia_user_id` = %s AND `jia_isu_uuid` = %s LIMIT 1"
+    (count,) = select_row(query, (jia_user_id, jia_isu_uuid), dictionary=False)
     if count == 0:
         raise NotFound("not found: isu")
 
@@ -632,8 +622,8 @@ def get_isu_confitions(jia_isu_uuid):
         except:
             raise BadRequest("bad format: start_time")
 
-    query = "SELECT name FROM `isu` WHERE `jia_isu_uuid` = %s AND `jia_user_id` = %s"
-    row = select_one(query, (jia_isu_uuid, jia_user_id))
+    query = "SELECT name FROM `isu` WHERE `jia_isu_uuid` = %s AND `jia_user_id` = %s LIMIT 1"
+    row = select_row(query, (jia_isu_uuid, jia_user_id))
     if row is None:
         raise NotFound("not found: isu")
     isu_name = row["name"]
